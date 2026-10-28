@@ -1,2 +1,5 @@
 # odin_sdl3_template
-From nadako/hello-sdlgpu3-odin
+
+A playground for starting exploring SDL3 development in Odin.
+
+From [nadako/hello-sdlgpu3-odin](https://github.com/nadako/hello-sdlgpu3-odin/tree/master)
