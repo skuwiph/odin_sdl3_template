@@ -11,7 +11,7 @@ import sdl "vendor:sdl3"
 import sdli "vendor:sdl3/image"
 
 
-load_texture :: proc(copy_pass: ^sdl.GPUCopyPass, texture_file: string) -> ^sdl.GPUTexture {
+load_texture_file :: proc(copy_pass: ^sdl.GPUCopyPass, texture_file: string) -> ^sdl.GPUTexture {
     // Texture loading and set up
     texture_path, _ := filepath.join({ CONTENT_DIR, "textures", texture_file }, context.temp_allocator)
     texture_file := strings.clone_to_cstring(texture_path, context.temp_allocator)
@@ -50,14 +50,4 @@ load_object_file:: proc(copy_pass: ^sdl.GPUCopyPass, mesh_file: string) -> Mesh 
     delete(vertices)
 
     return mesh
-}
-
-load_model :: proc(copy_pass: ^sdl.GPUCopyPass, mesh_file: string, texture_file: string) -> Model {
-    mesh := load_object_file(copy_pass, mesh_file)
-    texture := load_texture(copy_pass, texture_file)
-
-    return {
-        mesh = mesh,
-        texture = texture,
-    }
 }

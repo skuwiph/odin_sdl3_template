@@ -53,7 +53,8 @@ init_sdl :: proc() {
     ok = sdl.ClaimWindowForGPUDevice(g.gpu, g.window)
     if !ok do log.panicf("Could not claim window for GPU: {}", sdl.GetError())
 
-    ok = sdl.SetGPUSwapchainParameters(g.gpu, g.window, .SDR_LINEAR, .VSYNC);
+    // NOTE: was .LINEAR_SDR
+    ok = sdl.SetGPUSwapchainParameters(g.gpu, g.window, .SDR, .VSYNC);
     if !ok do log.panicf("Could not SetGPUSwapchainParameters for GPU: {}", sdl.GetError())
 
     g.swapchain_texture_format = sdl.GetGPUSwapchainTextureFormat(g.gpu, g.window)
@@ -201,10 +202,12 @@ main :: proc() {
     
     log.infof("Closing after {} iterations", iterations)
 
-    sdl.ReleaseGPUTexture(g.gpu, g.model.texture)
-    sdl.ReleaseGPUBuffer(g.gpu, g.model.index_buf)
-    sdl.ReleaseGPUBuffer(g.gpu, g.model.vertex_buf)
+    for model in g.models {
+        sdl.ReleaseGPUBuffer(g.gpu, model.mesh.index_buf)
+        sdl.ReleaseGPUBuffer(g.gpu, model.mesh.vertex_buf)
+    }    
 
+    sdl.ReleaseGPUTexture(g.gpu, g.models[0].texture)
     // None of this affects the warns at the end about live objects!
     sdl.ReleaseGPUTexture(g.gpu, g.depth_texture)
     // if model.texture != nil do sdl.ReleaseGPUTexture(gpu, model.texture)

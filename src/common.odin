@@ -8,6 +8,7 @@ CONTENT_DIR :: "content"
 Vec3 :: [3]f32
 Vec2 :: [2]f32
 Mat4 :: matrix[4,4]f32
+Quat :: quaternion128
 
 Globals :: struct {
     gpu : ^sdl.GPUDevice,
@@ -32,8 +33,9 @@ Globals :: struct {
     
     clear_color: sdl.FColor,
     rotate: bool,
-    rotation: f32,
-    model: Model,
+
+    models: []Model,
+    entities: []Entity,
 }
 
 sdl_assert :: proc(ok: bool) {
