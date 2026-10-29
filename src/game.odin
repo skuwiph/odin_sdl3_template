@@ -17,10 +17,14 @@ Vertex_Data :: struct {
     uv: Vec2,
 }
 
-Model :: struct {
+Mesh :: struct {
     vertex_buf: ^sdl.GPUBuffer,
     index_buf: ^sdl.GPUBuffer,
     num_indices: u32,
+}
+
+Model :: struct {
+    using mesh: Mesh,
     texture: ^sdl.GPUTexture,
 }
 
@@ -44,8 +48,13 @@ game_init :: proc() {
         position = { 0, EYE_HEIGHT, 3 },
         target = { 0, EYE_HEIGHT, 0 }
     }
+    
+    copy_cmd_buf := sdl.AcquireGPUCommandBuffer(g.gpu);
+    copy_pass := sdl.BeginGPUCopyPass(copy_cmd_buf)
+    g.model = load_model(copy_pass, "suv.obj", "colormap.png")  // Look at mtl  
+    sdl.EndGPUCopyPass(copy_pass)
+    ok: = sdl.SubmitGPUCommandBuffer(copy_cmd_buf); assert(ok)
 
-    g.model = load_model("suv.obj", "colormap.png")  // Look at mtl  
     g.rotate = true
     g.rotation = 0
 }
@@ -127,96 +136,6 @@ game_render :: proc(cmd_buf: ^sdl.GPUCommandBuffer, swapchain_tex: ^sdl.GPUTextu
     sdl.BindGPUFragmentSamplers(render_pass, 0, &(sdl.GPUTextureSamplerBinding){texture = g.model.texture,sampler = g.sampler}, 1)
     sdl.DrawGPUIndexedPrimitives(render_pass, g.model.num_indices, 1, 0, 0, 0 )
     sdl.EndGPURenderPass(render_pass)
-}
-
-
-load_model :: proc(mesh_file: string, texture_file: string) -> Model {
-    mesh_path, _    := filepath.join({ CONTENT_DIR, "meshes", mesh_file }, context.temp_allocator)
-    texture_path, _ := filepath.join({ CONTENT_DIR, "textures", texture_file }, context.temp_allocator)
-
-    texture_file := strings.clone_to_cstring(texture_path, context.temp_allocator)
-
-    obj_data := obj_load(mesh_path)
-
-    vertices := make([]Vertex_Data, len(obj_data.faces))
-    indices := make([]u16, len(obj_data.faces))
-
-	for face, i in obj_data.faces {
-		uv := obj_data.uvs[face.uv]
-		vertices[i] = {
-			pos = obj_data.positions[face.pos],
-			color = linalg.pow(sdl.FColor { 1, 1, 1, 1 }, 2.2),
-			uv = {uv.x, 1-uv.y},
-		}
-		indices[i] = u16(i)
-	}
-
-    num_indices := len(indices)
-    vertices_byte_size := len(vertices) * size_of(vertices[0])
-    indices_byte_size := len(indices) * size_of(indices[0])
-
-    obj_destroy(obj_data)
-
-    vertex_buf := sdl.CreateGPUBuffer(g.gpu, {
-        usage = {.VERTEX},
-        size = u32(vertices_byte_size),
-    })
-    index_buf := sdl.CreateGPUBuffer(g.gpu, {
-        usage = {.INDEX},
-        size = u32(indices_byte_size),
-    })
-
-    // Upload vertex data to the buffer
-    transfer_buf := sdl.CreateGPUTransferBuffer(g.gpu, {
-        usage = .UPLOAD,
-        size = u32(vertices_byte_size + indices_byte_size),       
-    })
-
-    // Map memory from CPU to GPU
-    transfer_mem := transmute([^]byte) sdl.MapGPUTransferBuffer(g.gpu, transfer_buf, false)
-    mem.copy(transfer_mem, raw_data(vertices), vertices_byte_size)
-    mem.copy(transfer_mem[vertices_byte_size:], raw_data(indices), indices_byte_size)
-    sdl.UnmapGPUTransferBuffer(g.gpu, transfer_buf)
-
-    delete(indices)
-    delete(vertices)
-
-    copy_cmd_buf := sdl.AcquireGPUCommandBuffer(g.gpu);
-    copy_pass := sdl.BeginGPUCopyPass(copy_cmd_buf)
-    sdl.UploadToGPUBuffer(
-        copy_pass, 
-        {transfer_buffer = transfer_buf},
-        {buffer = vertex_buf, size = u32(vertices_byte_size)},
-        false
-    )
-    sdl.UploadToGPUBuffer(
-        copy_pass, 
-        {
-            transfer_buffer = transfer_buf, 
-            offset = u32(vertices_byte_size)
-        },
-        {buffer = index_buf, size = u32(indices_byte_size)},
-        false
-    )
-
-    // Texture loading and set up
-    texture_w := i32(0);
-    texture_h := i32(0);
-    texture := sdli.LoadGPUTexture(g.gpu, copy_pass, texture_file, &texture_w, &texture_h)
-    if texture != nil do log.debugf("Loaded texture with dims {}x{}", texture_w, texture_h)
-
-    sdl.EndGPUCopyPass(copy_pass)
-
-    ok: = sdl.SubmitGPUCommandBuffer(copy_cmd_buf); assert(ok)
-
-    sdl.ReleaseGPUTransferBuffer(g.gpu, transfer_buf)
-
-    return {
-        vertex_buf = vertex_buf,
-        index_buf = index_buf,
-        num_indices = u32(num_indices),
-        texture = texture,
-    }
 }
 
 setup_pipeline :: proc() {
