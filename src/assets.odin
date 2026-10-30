@@ -36,8 +36,9 @@ load_object_file:: proc(copy_pass: ^sdl.GPUCopyPass, mesh_file: string) -> Mesh 
 		uv := obj_data.uvs[face.uv]
 		vertices[i] = {
 			pos = obj_data.positions[face.pos],
-			color = linalg.pow(sdl.FColor { 1, 1, 1, 1 }, 2.2),
+			color = sdl.FColor { 1, 1, 1, 1 },
 			uv = {uv.x, 1-uv.y},
+            normal = obj_data.normals[face.normal],
 		}
 		indices[i] = u16(i)
 	}

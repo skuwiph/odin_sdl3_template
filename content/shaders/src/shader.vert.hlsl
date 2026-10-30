@@ -1,26 +1,41 @@
-cbuffer UBO : register(b0, space1) {
-    float4x4 mvp;
+cbuffer Global : register(b0, space1)
+{
+    float4x4 viewProjectionMat;
 }
 
-struct Input {
-    float3 position : TEXTCOORD0;
-    float4 color    : TEXTCOORD1;
-    float2 uv       : TEXTCOORD2;
+cbuffer Local : register(b1, space1)
+{
+    float4x4 modelMat;
+    float4x4 normalMat;
+}
+
+struct Input
+{
+    float3 position : TEXCOORD0;
+    float2 uv : TEXCOORD1;
+    float3 normal : TEXCOORD2;
+    float4 color : TEXCOORD3;
 };
 
-// Pass to fragment shader
-struct Output {
-    float4 position : SV_Position;
-    float4 color    : TEXTCOORD0;
-    float2 uv       : TEXTCOORD1;
+struct Output
+{
+    float2 uv : TEXCOORD0;
+    float3 position : TEXCOORD1;
+    float3 normal : TEXCOORD2;
+    float4 color : TEXCOORD3;
+    float4 clipPosition : SV_Position;
 };
 
-Output main(Input input) {
+Output main(Input input)
+{
+    float4 worldPosition = mul(modelMat, float4(input.position, 1));
+
     Output result;
-
-    result.position = mul(mvp, float4(input.position, 1));
+    result.clipPosition = mul(viewProjectionMat, worldPosition);
     result.color = input.color;
     result.uv = input.uv;
+    result.position = worldPosition.xyz;
+    result.normal = normalize(mul(normalMat, float4(input.normal, 0)).xyz);
 
     return result;
 }

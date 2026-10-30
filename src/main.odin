@@ -2,22 +2,12 @@ package main
 
 import "base:runtime"
 import "core:log"
-import "core:mem"
 import "core:math/linalg"
-import "core:path/filepath"
-import "core:strings"
-
 import sdl "vendor:sdl3"
 
 import im "shared:imgui"
 import im_sdl "shared:imgui/imgui_impl_sdl3"
 import im_sdlgpu "shared:imgui/imgui_impl_sdlgpu3"
-
-
-
-
-
-
 
 g : Globals
 
@@ -27,7 +17,9 @@ sdl_log :: proc "c" (userdata: rawptr, category: sdl.LogCategory, priority: sdl.
 	switch priority {
 	case .INVALID, .TRACE, .VERBOSE, .DEBUG: level = .Debug
 	case .INFO: level = .Info
-	case .WARN: level = .Warning
+	case .WARN: 
+        level = .Warning 
+        return // temp
 	case .ERROR: level = .Error
 	case .CRITICAL: level = .Fatal
 	}
@@ -54,13 +46,13 @@ init_sdl :: proc() {
     if !ok do log.panicf("Could not claim window for GPU: {}", sdl.GetError())
 
     // NOTE: was .LINEAR_SDR
-    ok = sdl.SetGPUSwapchainParameters(g.gpu, g.window, .SDR, .VSYNC);
+    ok = sdl.SetGPUSwapchainParameters(g.gpu, g.window, .SDR_LINEAR, .VSYNC);
     if !ok do log.panicf("Could not SetGPUSwapchainParameters for GPU: {}", sdl.GetError())
 
     g.swapchain_texture_format = sdl.GetGPUSwapchainTextureFormat(g.gpu, g.window)
 
     // Do on resize
-    ok = sdl.GetWindowSize(g.window, &g.window_size.x, &g.window_size.y); assert(ok)
+    ok = sdl.GetWindowSize(g.window, &g.window_size.x, &g.window_size.y); sdl_assert(ok)
 
     g.depth_texture_format = .D16_UNORM
     try_depth_format :: proc(format: sdl.GPUTextureFormat) {
@@ -172,7 +164,7 @@ main :: proc() {
         
         // acquire swapchain texture
         swapchain_tex: ^sdl.GPUTexture
-        ok := sdl.WaitAndAcquireGPUSwapchainTexture(cmd_buf, g.window, &swapchain_tex, nil, nil); assert(ok)
+        ok := sdl.WaitAndAcquireGPUSwapchainTexture(cmd_buf, g.window, &swapchain_tex, nil, nil); sdl_assert(ok)
 
         im.Render()
         im_draw_data := im.GetDrawData()
@@ -197,17 +189,20 @@ main :: proc() {
         }
 
         // submit command buffer
-        ok = sdl.SubmitGPUCommandBuffer(cmd_buf); assert(ok)
+        ok = sdl.SubmitGPUCommandBuffer(cmd_buf); sdl_assert(ok)
     }
     
     log.infof("Closing after {} iterations", iterations)
+
+    // TODO: have an asset store of shared resources such 
+    // as textures, so we only release once
 
     for model in g.models {
         sdl.ReleaseGPUBuffer(g.gpu, model.mesh.index_buf)
         sdl.ReleaseGPUBuffer(g.gpu, model.mesh.vertex_buf)
     }    
+    sdl.ReleaseGPUTexture(g.gpu, g.models[0].material.diffuse_texture)
 
-    sdl.ReleaseGPUTexture(g.gpu, g.models[0].texture)
     // None of this affects the warns at the end about live objects!
     sdl.ReleaseGPUTexture(g.gpu, g.depth_texture)
     // if model.texture != nil do sdl.ReleaseGPUTexture(gpu, model.texture)
