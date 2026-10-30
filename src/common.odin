@@ -10,6 +10,8 @@ Vec2 :: [2]f32
 Mat4 :: matrix[4,4]f32
 Quat :: quaternion128
 
+WHITE :: sdl.FColor { 1, 1, 1, 1 }
+
 Globals :: struct {
     gpu : ^sdl.GPUDevice,
     window : ^sdl.Window,

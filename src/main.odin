@@ -206,7 +206,7 @@ main :: proc() {
     // None of this affects the warns at the end about live objects!
     sdl.ReleaseGPUTexture(g.gpu, g.depth_texture)
     // if model.texture != nil do sdl.ReleaseGPUTexture(gpu, model.texture)
-    sdl.ReleaseGPUSampler(g.gpu, g.sampler)
+    sdl.ReleaseGPUSampler(g.gpu, g.default_sampler)
     sdl.ReleaseWindowFromGPUDevice(g.gpu, g.window)
     sdl.DestroyWindow(g.window)
 }
