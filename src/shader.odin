@@ -51,7 +51,7 @@ load_shader :: proc(device: ^sdl.GPUDevice, shaderfile: string) -> ^sdl.GPUShade
 
 	info := load_shader_info(shaderfile)
 
-    log.debugf("Shader Info: {}", info)
+    log.debugf("Shader Info ({}): {}", filename, info)
 
 	return sdl.CreateGPUShader(device, {
 		code_size = len(code),
