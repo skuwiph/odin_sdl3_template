@@ -4,6 +4,7 @@ cbuffer Local : register(b1, space1)
 {
     float4x4 modelMat;
     float4x4 normalMat;
+    float scale;
 }
 
 struct Input
@@ -30,7 +31,7 @@ Output main(Input input)
     Output result;
     result.clipPosition = mul(viewProjectionMat, worldPosition);
     result.color = input.color;
-    result.uv = input.uv;
+    result.uv = input.uv * scale;
     result.position = worldPosition.xyz;
     result.normal = normalize(mul(normalMat, float4(input.normal, 0)).xyz);
 

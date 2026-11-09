@@ -38,6 +38,8 @@ float4 main(Input input) : SV_Target0
     float3 dirToView = normalize(viewPosition - input.position);
 
     float3 surfaceNormal = normalize(input.normal.xyz);
+    // float2 wrappedUV = frac(input.uv);
+    // float3 materialDiffuseReflection = diffuseMap.Sample(smp, wrappedUV).rgb;
     float3 materialDiffuseReflection = diffuseMap.Sample(smp, input.uv).rgb;
 
     float3 ambientIrradiance = ambientLightColor;

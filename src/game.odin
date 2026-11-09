@@ -38,6 +38,7 @@ Material :: struct {
     diffuse_texture: ^sdl.GPUTexture,
     specular_color: Vec3,
     specular_shininess: f32,
+    address_mode: sdl.TextureAddressMode,
 }
 
 // NOTE: Data must be aligned
@@ -50,6 +51,7 @@ UBO_Vertex_Global :: struct #packed {
 UBO_Vertex_Local :: struct #packed {
     model_mat: Mat4,
     normal_mat: Mat4,
+    scale: f32,
 }
 
 UBO_Fragment_Global :: struct #packed {
@@ -117,6 +119,8 @@ game_init :: proc() {
     g.default_sampler = sdl.CreateGPUSampler(g.gpu, {
         min_filter = .LINEAR,
         mag_filter = .LINEAR,
+        address_mode_u = .REPEAT,
+        address_mode_v = .REPEAT,
     })
 
     copy_cmd_buf := sdl.AcquireGPUCommandBuffer(g.gpu);
@@ -144,7 +148,7 @@ game_init :: proc() {
         { load_object_file(copy_pass, "suv.obj"),          { diffuse_texture = colormap, specular_color = 0, specular_shininess = 1 } },
         { load_object_file(copy_pass, "delivery.obj"),     { diffuse_texture = colormap, specular_color = {1,0,0}, specular_shininess = 80 } },
 
-        { generate_plane_mesh(copy_pass, 100, 100), { diffuse_texture = cobblestone, specular_color = 0, specular_shininess = 1}},
+        { generate_plane_mesh(copy_pass, 100, 100), { diffuse_texture = cobblestone, specular_color = 0, specular_shininess = 1, address_mode = .WRAP}},
         { generate_box_mesh(copy_pass, 1, 1, 1), { diffuse_texture = prototype_texture, specular_color = 1, specular_shininess = 100}},
     })
     
@@ -294,15 +298,16 @@ game_render :: proc(cmd_buf: ^sdl.GPUCommandBuffer, swapchain_tex: ^sdl.GPUTextu
     for entity in g.entities {
         model_mat := linalg.matrix4_from_trs_f32(entity.position, entity.rotation, 1)
         normal_mat := linalg.inverse_transpose((model_mat))
-
+        
         ubo_vert_local := UBO_Vertex_Local { 
             model_mat = model_mat,
             normal_mat = normal_mat,
+            scale = entity.model_id != 3 ? 1.0 : 50.0,
         }
 
         model := g.models[entity.model_id]
         material := model.material
-
+        
         ubo_frag_local := UBO_Fragment_Local {
             material_specular_color = material.specular_color,
             material_specular_shininess = material.specular_shininess,
@@ -377,12 +382,13 @@ setup_pipeline :: proc() {
 		},
 		rasterizer_state = {
 			cull_mode = .BACK,
+
 			// fill_mode = .LINE,
 		},
 		target_info = {
 			num_color_targets = 1,
 			color_target_descriptions = &(sdl.GPUColorTargetDescription {
-				format = g.swapchain_texture_format,
+				format = g.swapchain_texture_format,               
 			}),
 			has_depth_stencil_target = true,
 			depth_stencil_format = g.depth_texture_format,
