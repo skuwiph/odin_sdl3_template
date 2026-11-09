@@ -144,7 +144,7 @@ game_init :: proc() {
         { load_object_file(copy_pass, "suv.obj"),          { diffuse_texture = colormap, specular_color = 0, specular_shininess = 1 } },
         { load_object_file(copy_pass, "delivery.obj"),     { diffuse_texture = colormap, specular_color = {1,0,0}, specular_shininess = 80 } },
 
-        { generate_plane_mesh(copy_pass, 10, 10), { diffuse_texture = cobblestone, specular_color = 0, specular_shininess = 1}},
+        { generate_plane_mesh(copy_pass, 100, 100), { diffuse_texture = cobblestone, specular_color = 0, specular_shininess = 1}},
         { generate_box_mesh(copy_pass, 1, 1, 1), { diffuse_texture = prototype_texture, specular_color = 1, specular_shininess = 100}},
     })
     
