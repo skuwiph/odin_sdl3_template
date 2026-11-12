@@ -382,7 +382,6 @@ setup_pipeline :: proc() {
 		},
 		rasterizer_state = {
 			cull_mode = .BACK,
-
 			// fill_mode = .LINE,
 		},
 		target_info = {
@@ -431,7 +430,6 @@ setup_light_shape_pipeline :: proc() {
 		},
 		rasterizer_state = {
 			cull_mode = .BACK,
-			// fill_mode = .LINE,
 		},
 		target_info = {
 			num_color_targets = 1,
@@ -462,7 +460,6 @@ setup_skybox_pipeline :: proc() {
 		},
 		rasterizer_state = {
 			cull_mode = .BACK,
-			// fill_mode = .LINE,
 		},
 		target_info = {
 			num_color_targets = 1,
