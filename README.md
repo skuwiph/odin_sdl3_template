@@ -10,6 +10,7 @@ From [nadako/hello-sdlgpu3-odin](https://github.com/nadako/hello-sdlgpu3-odin/tr
 * mesh textures should live in `/content/textures/`, sourced from Kenney.NL's downloads as well.
 * expects [shadercross](https://github.com/libsdl-org/SDL_shadercross) to be present on the path in order to build and compile the shaders.
 * compiled shaders are created in `/content/shaders/out` as part of the build stage
+* Odin IMGUI bindings (from L-4's version): place in ./odin/shared/ with `git clone https://gitlab.com/nadako/odin-imgui -b sdlgpu3 imgui`
 
 ## PLAN
 
@@ -21,15 +22,13 @@ Checkout Presentation Mode for logical width/height scaling
 
 * https://wiki.libsdl.org/SDL3/APIByCategory
 * https://wiki.libsdl.org/SDL3/Tutorials
-
-std140 alignment illustrator
-* https://maraneshi.github.io/HLSL-ConstantBufferLayoutVisualizer/
-
+* std140 alignment illustrator : https://maraneshi.github.io/HLSL-ConstantBufferLayoutVisualizer/
 * https://dawaralvi.github.io/sdl-gpu/
-
 * https://glusoft.com/sdl3-tutorials/
 
-* https://halisavakis.com/my-take-on-shaders-water-shader/
-* https://alextardif.com/Water.html
+* Water shaders
+    * https://halisavakis.com/my-take-on-shaders-water-shader/
+    * https://alextardif.com/Water.html
 
-* \Documents\OGRE\model
+* Old models
+    * \Documents\OGRE\model
