@@ -33,6 +33,6 @@ Output main(Input input)
 
     Output result;
     result.clipPosition = clipSpacePosition;
-    result.texCoords = viewDir;
+    result.texCoords = viewDir.xyz;
     return result;
 }
