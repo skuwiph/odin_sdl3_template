@@ -171,9 +171,9 @@ game_init :: proc() {
         target = { 0, EYE_HEIGHT, 0 }
     }
 
-    g.light_position = { 0, 5, 3 }
+    g.light_position = { 0, 10, 3 }
     g.light_color = { 1, 1, 1 }
-    g.light_intensity = 30
+    g.light_intensity = 200
     g.ambient_light_color = { 0.1, 0.1, 0.1 }
 }
 
@@ -188,7 +188,7 @@ game_update :: proc(delta_time: f32) {
             im.ColorEdit3("Ambient Color", &g.ambient_light_color, { .Float })           
 
             im.SeparatorText("Light")
-            im.DragFloat3("Position", &g.light_position, 0.1, -10, 10)
+            im.DragFloat3("Position", &g.light_position, 0.1, -10, 500)
             im.ColorEdit3("Color", &g.light_color, {.Float})
             im.DragFloat("Intensity", &g.light_intensity, 0.01, 0, 1000)
             
@@ -293,6 +293,8 @@ game_render :: proc(cmd_buf: ^sdl.GPUCommandBuffer, swapchain_tex: ^sdl.GPUTextu
         sdl.BindGPUIndexBuffer(render_pass, { buffer = g.light_shape_mesh.index_buf }, ._16BIT)
         sdl.DrawGPUIndexedPrimitives(render_pass, g.light_shape_mesh.num_indices, 1, 0, 0, 0)
     }
+
+
     sdl.BindGPUGraphicsPipeline(render_pass, g.entity_pipeline)
 
     for entity in g.entities {

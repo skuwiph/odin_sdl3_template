@@ -20,6 +20,8 @@ Globals :: struct {
     depth_texture_format: sdl.GPUTextureFormat,
     swapchain_texture_format: sdl.GPUTextureFormat,
 
+    sdl_initialised: bool,
+
     key_down : #sparse [sdl.Scancode]bool,
     mouse_move : Vec2,
  

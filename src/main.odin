@@ -26,7 +26,7 @@ sdl_log :: proc "c" (
 		level = .Info
 	case .WARN:
 		level = .Warning
-		return // temp
+		// return // temp
 	case .ERROR:
 		level = .Error
 	case .CRITICAL:
@@ -42,7 +42,7 @@ init_sdl :: proc() {
 	sdl.SetLogPriorities(.VERBOSE)
 	sdl.SetLogOutputFunction(sdl_log, &sdl_log_context)
 
-	ok := sdl.Init({.VIDEO})
+	ok := sdl.Init({ .VIDEO })
 	if !ok do log.panicf("Could not init SDL: {}", sdl.GetError())
 
 	g.window = sdl.CreateWindow("SDL3", 1280, 780, {})
@@ -54,7 +54,7 @@ init_sdl :: proc() {
 	ok = sdl.ClaimWindowForGPUDevice(g.gpu, g.window)
 	if !ok do log.panicf("Could not claim window for GPU: {}", sdl.GetError())
 
-	// NOTE: was .LINEAR_SDR
+	// NOTE: was .SDR_LINEAR
 	ok = sdl.SetGPUSwapchainParameters(g.gpu, g.window, .SDR_LINEAR, .VSYNC)
 	if !ok do log.panicf("Could not SetGPUSwapchainParameters for GPU: {}", sdl.GetError())
 
@@ -83,17 +83,22 @@ init_sdl_window :: proc() {
 
 	log.debug("Creating depth_texture")
 
+    props := sdl.CreateProperties()
+    defer sdl.DestroyProperties(props)
+
+    sdl.SetFloatProperty(props, sdl.PROP_GPU_TEXTURE_CREATE_D3D12_CLEAR_DEPTH_FLOAT, 1.0)
+
 	g.depth_texture = sdl.CreateGPUTexture(
-	g.gpu,
-	{
-		format               = g.depth_texture_format,
-		usage                = {.DEPTH_STENCIL_TARGET},
-		width                = u32(g.window_size.x),
-		height               = u32(g.window_size.y),
-		layer_count_or_depth = 1,
-		num_levels           = 1,
-		// props = properties
-	},
+        g.gpu,
+        {
+            format               = g.depth_texture_format,
+            usage                = {.DEPTH_STENCIL_TARGET},
+            width                = u32(g.window_size.x),
+            height               = u32(g.window_size.y),
+            layer_count_or_depth = 1,
+            num_levels           = 1,
+            props                = props,
+        },
 	)
 
 	log.debug("Created depth_texture")
@@ -179,6 +184,7 @@ main :: proc() {
 
 		// acquire swapchain texture
 		swapchain_tex: ^sdl.GPUTexture
+
 		ok := sdl.WaitAndAcquireGPUSwapchainTexture(
 			cmd_buf,
 			g.window,
@@ -218,16 +224,45 @@ main :: proc() {
 	// TODO: have an asset store of shared resources such
 	// as textures, so we only release once
 
-	for model in g.models {
-		sdl.ReleaseGPUBuffer(g.gpu, model.mesh.index_buf)
-		sdl.ReleaseGPUBuffer(g.gpu, model.mesh.vertex_buf)
-	}
-	sdl.ReleaseGPUTexture(g.gpu, g.models[0].material.diffuse_texture)
+    if sdl.WaitForGPUIdle(g.gpu) {
+        for model in g.models {
+            sdl.ReleaseGPUBuffer(g.gpu, model.mesh.index_buf)
+            sdl.ReleaseGPUBuffer(g.gpu, model.mesh.vertex_buf)
+        }
+        sdl.ReleaseGPUTexture(g.gpu, g.models[0].material.diffuse_texture)
 
-	// None of this affects the warns at the end about live objects!
-	sdl.ReleaseGPUTexture(g.gpu, g.depth_texture)
-	// if model.texture != nil do sdl.ReleaseGPUTexture(gpu, model.texture)
-	sdl.ReleaseGPUSampler(g.gpu, g.default_sampler)
-	sdl.ReleaseWindowFromGPUDevice(g.gpu, g.window)
-	sdl.DestroyWindow(g.window)
+        if g.entity_pipeline != nil {
+            log.debug("RELEASE: entity_pipeline")
+            sdl.ReleaseGPUGraphicsPipeline(g.gpu, g.entity_pipeline)
+        }
+        if g.skybox_pipeline != nil {
+            log.debug("RELEASE: skybox_pipeline")
+            sdl.ReleaseGPUGraphicsPipeline(g.gpu, g.skybox_pipeline)
+        }
+        if g.light_shape_pipeline != nil {
+            log.debug("RELEASE: light_shape_pipeline")
+            sdl.ReleaseGPUGraphicsPipeline(g.gpu, g.light_shape_pipeline)
+        }
+        // None of this affects the warns at the end about live objects!
+        if g.depth_texture != nil {
+            log.debug("RELEASE: Releasing depth_texture")
+            sdl.ReleaseGPUTexture(g.gpu, g.depth_texture)
+        } 
+        if g.default_sampler != nil {
+            log.debug("RELEASE: default_sampler")
+            sdl.ReleaseGPUSampler(g.gpu, g.default_sampler)
+        }
+        if g.window != nil {
+            log.debug("RELEASE: window from device")    
+            sdl.ReleaseWindowFromGPUDevice(g.gpu, g.window)
+        } 
+
+        log.debug("RELEASE: window")
+        sdl.DestroyWindow(g.window)
+
+        if g.gpu != nil {
+            log.debug("RELEASE: gpu device")
+            sdl.DestroyGPUDevice(g.gpu)
+        }
+    }
 }

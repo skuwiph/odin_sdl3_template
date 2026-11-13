@@ -11,7 +11,8 @@ From [nadako/hello-sdlgpu3-odin](https://github.com/nadako/hello-sdlgpu3-odin/tr
 * expects [shadercross](https://github.com/libsdl-org/SDL_shadercross) to be present on the path in order to build and compile the shaders.
 * compiled shaders are created in `/content/shaders/out` as part of the build stage
 * Odin IMGUI bindings (from L-4's version): place in ./odin/shared/ with `git clone https://gitlab.com/nadako/odin-imgui -b sdlgpu3 imgui`
-
+* You may need the WinPixEventRuntime dll present too: https://devblogs.microsoft.com/pix/winpixeventruntime/
+  
 ## PLAN
 
 SDL3
