@@ -111,7 +111,7 @@ LOOK_SENSITIVITY :: 0.01
 ROTATION_SPEED :: f32(90) * linalg.RAD_PER_DEG
 
 game_init :: proc() {
-    setup_pipeline()
+    setup_entity_pipeline()
     setup_light_shape_pipeline()
     setup_skybox_pipeline()
     
@@ -157,8 +157,8 @@ game_init :: proc() {
     
     g.entities = slice.clone([]Entity {
         { model_id = 0, position = { 0, 0, 0 }, rotation = linalg.QUATERNIONF32_IDENTITY},
-        { model_id = 1, position = { 3, 0, 0 }, rotation = linalg.quaternion_from_euler_angle_y_f32(15 * linalg.RAD_PER_DEG)},
-        { model_id = 2, position = { -3, 0, 0 }, rotation = linalg.quaternion_from_euler_angle_y_f32(-15 * linalg.RAD_PER_DEG)},
+        { model_id = 1, position = { 4, 0, 0 }, rotation = linalg.quaternion_from_euler_angle_y_f32(15 * linalg.RAD_PER_DEG)},
+        { model_id = 2, position = { -4, 0, 0 }, rotation = linalg.quaternion_from_euler_angle_y_f32(-15 * linalg.RAD_PER_DEG)},
         { model_id = 3 },
         { model_id = 4, position = { 3, 0.5, 3} },
     })
@@ -173,7 +173,7 @@ game_init :: proc() {
 
     g.light_position = { 0, 10, 3 }
     g.light_color = { 1, 1, 1 }
-    g.light_intensity = 200
+    g.light_intensity = 100
     g.ambient_light_color = { 0.1, 0.1, 0.1 }
 }
 
@@ -209,6 +209,8 @@ game_update :: proc(delta_time: f32) {
     // update game state
     if g.rotate {
         g.entities[0].rotation *= linalg.quaternion_from_euler_angle_y_f32(ROTATION_SPEED * delta_time)
+        g.entities[1].rotation *= linalg.quaternion_from_euler_angle_y_f32(-ROTATION_SPEED * delta_time)
+        g.entities[2].rotation *= linalg.quaternion_from_euler_angle_y_f32(-ROTATION_SPEED * delta_time)
     }
 
     update_camera(delta_time)
@@ -336,11 +338,17 @@ game_render :: proc(cmd_buf: ^sdl.GPUCommandBuffer, swapchain_tex: ^sdl.GPUTextu
     sdl.EndGPURenderPass(render_pass)
 }
 
-// TODO: unify and abstract pipeline creation
-setup_pipeline :: proc() {
-    vert_shader := load_shader(g.gpu, "shader.vert")
-    frag_shader := load_shader(g.gpu, "shader.frag")  
+Pipeline_Create :: struct {
+    vertex_shader: string,
+    vertex_attrs: []sdl.GPUVertexAttribute, 
+    fragment_shader: string, 
+    primitive_type: sdl.GPUPrimitiveType,               // .TRIANGLELIST
+    depth_texture_format: sdl.GPUTextureFormat, 
+    depth_stencil_compare: sdl.GPUCompareOp, 
+    swapchain_texture_format: sdl.GPUTextureFormat
+}
 
+setup_entity_pipeline :: proc () {
 	vertex_attrs := []sdl.GPUVertexAttribute {
 		{
 			location = 0,
@@ -364,115 +372,95 @@ setup_pipeline :: proc() {
         },
 	}
 
-    g.entity_pipeline = sdl.CreateGPUGraphicsPipeline(g.gpu, {
-		vertex_shader = vert_shader,
-		fragment_shader = frag_shader,
-		primitive_type = .TRIANGLELIST,
-		vertex_input_state = {
-			num_vertex_buffers = 1,
-			vertex_buffer_descriptions = &(sdl.GPUVertexBufferDescription {
-				slot = 0,
-				pitch = size_of(Vertex_Data),
-			}),
-			num_vertex_attributes = u32(len(vertex_attrs)),
-			vertex_attributes = raw_data(vertex_attrs)
-		},
-		depth_stencil_state = {
-			enable_depth_test = true,
-			enable_depth_write = true,
-			compare_op = .LESS,
-		},
-		rasterizer_state = {
-			cull_mode = .BACK,
-			// fill_mode = .LINE,
-		},
-		target_info = {
-			num_color_targets = 1,
-			color_target_descriptions = &(sdl.GPUColorTargetDescription {
-				format = g.swapchain_texture_format,               
-			}),
-			has_depth_stencil_target = true,
-			depth_stencil_format = g.depth_texture_format,
-		}
-	})
+    pc : Pipeline_Create = {
+        vertex_shader = "shader.vert",
+        fragment_shader = "shader.frag",
+        vertex_attrs = vertex_attrs,
+        primitive_type = .TRIANGLELIST,
+        depth_texture_format = g.depth_texture_format,
+        depth_stencil_compare = .LESS,
+        swapchain_texture_format = g.swapchain_texture_format,
+    }
 
-    sdl.ReleaseGPUShader(g.gpu, vert_shader)
-    sdl.ReleaseGPUShader(g.gpu, frag_shader)
+    g.entity_pipeline = get_pipeline(pc)
 }
 
 setup_light_shape_pipeline :: proc() {
-    vert_shader := load_shader(g.gpu, "lightshape.vert")
-    frag_shader := load_shader(g.gpu, "lightshape.frag")  
+    vertex_attrs := []sdl.GPUVertexAttribute {
+        {
+            location = 0,
+            format = .FLOAT3,
+            offset = u32(offset_of(Vertex_Data, pos)),
+        },
+    }
 
-	vertex_attrs := []sdl.GPUVertexAttribute {
-		{
-			location = 0,
-			format = .FLOAT3,
-			offset = u32(offset_of(Vertex_Data, pos)),
-		},
-	}
+    pc : Pipeline_Create = {
+        vertex_shader = "lightshape.vert",
+        fragment_shader = "lightshape.frag",
+        vertex_attrs = vertex_attrs,
+        primitive_type = .TRIANGLELIST,
+        depth_texture_format = g.depth_texture_format,
+        depth_stencil_compare = .LESS,
+        swapchain_texture_format = g.swapchain_texture_format,
+    }
 
-    g.light_shape_pipeline = sdl.CreateGPUGraphicsPipeline(g.gpu, {
-		vertex_shader = vert_shader,
-		fragment_shader = frag_shader,
-		primitive_type = .TRIANGLELIST,
-		vertex_input_state = {
-			num_vertex_buffers = 1,
-			vertex_buffer_descriptions = &(sdl.GPUVertexBufferDescription {
-				slot = 0,
-				pitch = size_of(Vertex_Data),
-			}),
-			num_vertex_attributes = u32(len(vertex_attrs)),
-			vertex_attributes = raw_data(vertex_attrs)
+    g.light_shape_pipeline = get_pipeline(pc)
+}
+
+setup_skybox_pipeline :: proc() {
+    pc : Pipeline_Create = {
+        vertex_shader = "skybox.vert",
+        fragment_shader = "skybox.frag",
+        primitive_type = .TRIANGLELIST,
+        depth_texture_format = g.depth_texture_format,
+        depth_stencil_compare = .EQUAL,
+        swapchain_texture_format = g.swapchain_texture_format,
+    }
+
+    g.skybox_pipeline = get_pipeline(pc)
+}
+
+get_pipeline :: proc( pc: Pipeline_Create ) -> ^sdl.GPUGraphicsPipeline {
+    vert_shader := load_shader(g.gpu, pc.vertex_shader)
+    frag_shader := load_shader(g.gpu, pc.fragment_shader)  
+    defer {
+        sdl.ReleaseGPUShader(g.gpu, vert_shader)
+        sdl.ReleaseGPUShader(g.gpu, frag_shader)
+    }
+
+    pci : sdl.GPUGraphicsPipelineCreateInfo = {
+        vertex_shader = vert_shader,
+        fragment_shader = frag_shader,
+		primitive_type = pc.primitive_type,
+        rasterizer_state = {
+			cull_mode = .BACK,
 		},
 		depth_stencil_state = {
 			enable_depth_test = true,
 			enable_depth_write = true,
-			compare_op = .LESS,
-		},
-		rasterizer_state = {
-			cull_mode = .BACK,
+			compare_op = pc.depth_stencil_compare,
 		},
 		target_info = {
 			num_color_targets = 1,
 			color_target_descriptions = &(sdl.GPUColorTargetDescription {
-				format = g.swapchain_texture_format,
+				format = pc.swapchain_texture_format,
 			}),
 			has_depth_stencil_target = true,
-			depth_stencil_format = g.depth_texture_format,
+			depth_stencil_format = pc.depth_texture_format,
 		}
-	})
+    }
 
-    sdl.ReleaseGPUShader(g.gpu, vert_shader)
-    sdl.ReleaseGPUShader(g.gpu, frag_shader)
-}
-
-setup_skybox_pipeline :: proc() {
-    vert_shader := load_shader(g.gpu, "skybox.vert")
-    frag_shader := load_shader(g.gpu, "skybox.frag")  
-
-    g.skybox_pipeline = sdl.CreateGPUGraphicsPipeline(g.gpu, {
-		vertex_shader = vert_shader,
-		fragment_shader = frag_shader,
-		primitive_type = .TRIANGLELIST,
-		depth_stencil_state = {
-			enable_depth_test = true,
-			enable_depth_write = false,
-			compare_op = .EQUAL,
-		},
-		rasterizer_state = {
-			cull_mode = .BACK,
-		},
-		target_info = {
-			num_color_targets = 1,
-			color_target_descriptions = &(sdl.GPUColorTargetDescription {
-				format = g.swapchain_texture_format,
+    if pc.vertex_attrs != nil {
+        pci.vertex_input_state = {
+            num_vertex_buffers = 1,
+			vertex_buffer_descriptions = &(sdl.GPUVertexBufferDescription {
+				slot = 0,
+				pitch = size_of(Vertex_Data),
 			}),
-			has_depth_stencil_target = true,
-			depth_stencil_format = g.depth_texture_format,
-		}
-	})
-
-    sdl.ReleaseGPUShader(g.gpu, vert_shader)
-    sdl.ReleaseGPUShader(g.gpu, frag_shader)
+			num_vertex_attributes = u32(len(pc.vertex_attrs)),
+			vertex_attributes = raw_data(pc.vertex_attrs)
+        }
+    }
+    
+    return sdl.CreateGPUGraphicsPipeline(g.gpu, pci)
 }
