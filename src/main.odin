@@ -180,11 +180,15 @@ main :: proc() {
 		// render
 
 		// acquire command buffer
+        // This command buffer is managed by the implementation and should not be freed by the user
+        // SEE: https://wiki.libsdl.org/SDL3/SDL_AcquireGPUCommandBuffer
 		cmd_buf := sdl.AcquireGPUCommandBuffer(g.gpu)
 
 		// acquire swapchain texture
+        // The swapchain texture is managed by the implementation and must not be freed by the user. 
+        // You MUST NOT call this function from any thread other than the one that created the window.
+        // SEE: https://wiki.libsdl.org/SDL3/SDL_WaitAndAcquireGPUSwapchainTexture
 		swapchain_tex: ^sdl.GPUTexture
-
 		ok := sdl.WaitAndAcquireGPUSwapchainTexture(
 			cmd_buf,
 			g.window,
@@ -217,9 +221,14 @@ main :: proc() {
 
 		// submit command buffer
 		ok = sdl.SubmitGPUCommandBuffer(cmd_buf); sdl_assert(ok)
+        
 	}
+    log.infof("Closing after {} iterations", iterations)
 
-	log.infof("Closing after {} iterations", iterations)
+    teardown()
+}
+
+teardown :: proc() {
 
 	// TODO: have an asset store of shared resources such
 	// as textures, so we only release once
@@ -257,12 +266,12 @@ main :: proc() {
             sdl.ReleaseWindowFromGPUDevice(g.gpu, g.window)
         } 
 
-        log.debug("RELEASE: window")
-        sdl.DestroyWindow(g.window)
-
         if g.gpu != nil {
             log.debug("RELEASE: gpu device")
             sdl.DestroyGPUDevice(g.gpu)
         }
+
+        log.debug("RELEASE: window")
+        sdl.DestroyWindow(g.window)
     }
 }
