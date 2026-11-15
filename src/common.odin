@@ -19,6 +19,8 @@ Globals :: struct {
     depth_texture: ^sdl.GPUTexture,
     depth_texture_format: sdl.GPUTextureFormat,
     swapchain_texture_format: sdl.GPUTextureFormat,
+    
+	textures:                 map[Texture_Id]^sdl.GPUTexture,
 
     sdl_initialised: bool,
 
@@ -26,6 +28,12 @@ Globals :: struct {
     mouse_move : Vec2,
  
     using game: Game_State,
+}
+
+Texture_Id :: enum {
+    Cobblestone = 0,
+    Colormap = 1,
+    Prototype = 2,
 }
 
 sdl_assert :: proc(ok: bool) {

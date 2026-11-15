@@ -59,6 +59,8 @@ init_sdl :: proc() {
 	if !ok do log.panicf("Could not SetGPUSwapchainParameters for GPU: {}", sdl.GetError())
 
 	g.swapchain_texture_format = sdl.GetGPUSwapchainTextureFormat(g.gpu, g.window)
+    
+	g.textures = make(map[Texture_Id]^sdl.GPUTexture)
 
 	init_sdl_window()
 
@@ -234,11 +236,20 @@ teardown :: proc() {
 	// as textures, so we only release once
 
     if sdl.WaitForGPUIdle(g.gpu) {
+        if len(g.textures) > 0 {
+            log.debugf("Releasing {} textures", len(g.textures))
+
+            for key, texture in g.textures {
+                log.debugf("Releasing Texture_Id {}", key)
+                sdl.ReleaseGPUTexture(g.gpu, texture)
+            }
+        }
+        defer delete(g.textures)
+
         for model in g.models {
             sdl.ReleaseGPUBuffer(g.gpu, model.mesh.index_buf)
             sdl.ReleaseGPUBuffer(g.gpu, model.mesh.vertex_buf)
         }
-        sdl.ReleaseGPUTexture(g.gpu, g.models[0].material.diffuse_texture)
 
         if g.entity_pipeline != nil {
             log.debug("RELEASE: entity_pipeline")

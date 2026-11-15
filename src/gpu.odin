@@ -17,7 +17,6 @@ upload_mesh_bytes :: proc(copy_pass: ^sdl.GPUCopyPass, vertices: []byte, indices
     vertices_byte_size := len(vertices)
     indices_byte_size := len(indices)
 
-
     vertex_buf := sdl.CreateGPUBuffer(g.gpu, {
         usage = {.VERTEX},
         size = u32(vertices_byte_size),

@@ -139,17 +139,17 @@ game_init :: proc() {
     g.skybox_texture = load_cubemap_texture_single(copy_pass, "skybox/daybox.png")
 
     // Look at mtl  
-    colormap := load_texture_file(copy_pass, "colormap.png")
-    cobblestone := load_texture_file(copy_pass, "cobblestone_1.png")
-    prototype_texture := load_texture_file(copy_pass, "texture_01.png")
+    g.textures[Texture_Id.Colormap] = load_texture_file(copy_pass, "colormap.png")
+    g.textures[Texture_Id.Cobblestone] = load_texture_file(copy_pass, "cobblestone_1.png")
+    g.textures[Texture_Id.Prototype] = load_texture_file(copy_pass, "texture_01.png")
 
     g.models = slice.clone([]Model {
-        { load_object_file(copy_pass, "sedan-sports.obj"), { diffuse_texture = colormap, specular_color = 1, specular_shininess = 160 } },
-        { load_object_file(copy_pass, "suv.obj"),          { diffuse_texture = colormap, specular_color = 0, specular_shininess = 1 } },
-        { load_object_file(copy_pass, "delivery.obj"),     { diffuse_texture = colormap, specular_color = {1,0,0}, specular_shininess = 80 } },
+        { load_object_file(copy_pass, "sedan-sports.obj"), { diffuse_texture = g.textures[Texture_Id.Colormap], specular_color = 1, specular_shininess = 160 } },
+        { load_object_file(copy_pass, "suv.obj"),          { diffuse_texture = g.textures[Texture_Id.Colormap], specular_color = 0, specular_shininess = 1 } },
+        { load_object_file(copy_pass, "delivery.obj"),     { diffuse_texture = g.textures[Texture_Id.Colormap], specular_color = {1,0,0}, specular_shininess = 80 } },
 
-        { generate_plane_mesh(copy_pass, 100, 100), { diffuse_texture = cobblestone, specular_color = 0, specular_shininess = 1, address_mode = .WRAP}},
-        { generate_box_mesh(copy_pass, 1, 1, 1), { diffuse_texture = prototype_texture, specular_color = 1, specular_shininess = 100}},
+        { generate_plane_mesh(copy_pass, 100, 100), { diffuse_texture = g.textures[Texture_Id.Cobblestone], specular_color = 0, specular_shininess = 1, address_mode = .WRAP}},
+        { generate_box_mesh(copy_pass, 1, 1, 1), { diffuse_texture = g.textures[Texture_Id.Prototype], specular_color = 1, specular_shininess = 100}},
     })
     
     sdl.EndGPUCopyPass(copy_pass)
