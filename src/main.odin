@@ -42,8 +42,12 @@ init_sdl :: proc() {
 	sdl.SetLogPriorities(.VERBOSE)
 	sdl.SetLogOutputFunction(sdl_log, &sdl_log_context)
 
+    // Must be called before Init
+    _ = sdl.SetAppMetadata("SDL3", "0.0.1", "com.electricraven.sdl3")
+
 	ok := sdl.Init({ .VIDEO })
 	if !ok do log.panicf("Could not init SDL: {}", sdl.GetError())
+
 
 	g.window = sdl.CreateWindow("SDL3", 1280, 780, {})
 	if g.window == nil do log.panicf("Could not create SDL window: {}", sdl.GetError())
@@ -123,7 +127,10 @@ main :: proc() {
 	context.logger = log.create_console_logger()
 
 	init_sdl()
-	game_init()
+
+    // TODO: start the default scene
+	// game_init()
+    // init_scene()
 
 	last_ticks := sdl.GetTicks()
 
@@ -149,7 +156,6 @@ main :: proc() {
 				break main_loop
 			case .WINDOW_RESIZED:
 				log.debug("WINDOW RESIZED")
-			// init_sdl_window()
 			case .KEY_DOWN:
 				if ev.key.scancode == .ESCAPE do break main_loop
 
@@ -172,12 +178,26 @@ main :: proc() {
 			}
 		}
 
+        // Test
+        if g.key_down[.KP_ENTER] {
+            g.current_scene = .Main
+        }
+
 		// IMGUI
 		im_sdlgpu.NewFrame()
 		im_sdl.NewFrame()
 		im.NewFrame()
 
-		game_update(delta_time)
+        switch g.current_scene {
+            case Scenes.None:
+                break;
+            case Scenes.Main:
+                if g.initialised {
+                    update_scene(delta_time)
+                } else {
+                    init_scene()
+                }
+        }
 
 		// render
 
@@ -232,57 +252,13 @@ main :: proc() {
 
 teardown :: proc() {
 
-	// TODO: have an asset store of shared resources such
-	// as textures, so we only release once
-
-    if sdl.WaitForGPUIdle(g.gpu) {
-        if len(g.textures) > 0 {
-            log.debugf("Releasing {} textures", len(g.textures))
-
-            for key, texture in g.textures {
-                log.debugf("Releasing Texture_Id {}", key)
-                sdl.ReleaseGPUTexture(g.gpu, texture)
-            }
-        }
-        defer delete(g.textures)
-
-        for model in g.models {
-            sdl.ReleaseGPUBuffer(g.gpu, model.mesh.index_buf)
-            sdl.ReleaseGPUBuffer(g.gpu, model.mesh.vertex_buf)
-        }
-
-        if g.entity_pipeline != nil {
-            log.debug("RELEASE: entity_pipeline")
-            sdl.ReleaseGPUGraphicsPipeline(g.gpu, g.entity_pipeline)
-        }
-        if g.skybox_pipeline != nil {
-            log.debug("RELEASE: skybox_pipeline")
-            sdl.ReleaseGPUGraphicsPipeline(g.gpu, g.skybox_pipeline)
-        }
-        if g.light_shape_pipeline != nil {
-            log.debug("RELEASE: light_shape_pipeline")
-            sdl.ReleaseGPUGraphicsPipeline(g.gpu, g.light_shape_pipeline)
-        }
-        // None of this affects the warns at the end about live objects!
-        if g.depth_texture != nil {
-            log.debug("RELEASE: Releasing depth_texture")
-            sdl.ReleaseGPUTexture(g.gpu, g.depth_texture)
-        } 
-        if g.default_sampler != nil {
-            log.debug("RELEASE: default_sampler")
-            sdl.ReleaseGPUSampler(g.gpu, g.default_sampler)
-        }
-        if g.window != nil {
-            log.debug("RELEASE: window from device")    
-            sdl.ReleaseWindowFromGPUDevice(g.gpu, g.window)
-        } 
-
-        if g.gpu != nil {
-            log.debug("RELEASE: gpu device")
-            sdl.DestroyGPUDevice(g.gpu)
-        }
-
-        log.debug("RELEASE: window")
-        sdl.DestroyWindow(g.window)
+    switch g.current_scene {
+        case .None:
+            break;
+        case .Main:
+            if g.initialised do cleanup_scene()
     }
+
+    log.debug("Closing!")
+    sdl.Quit()
 }

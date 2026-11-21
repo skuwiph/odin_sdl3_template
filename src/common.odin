@@ -27,13 +27,20 @@ Globals :: struct {
     key_down : #sparse [sdl.Scancode]bool,
     mouse_move : Vec2,
  
-    using game: Game_State,
+    using game: Scene_State,
+
+    current_scene: Scenes,
 }
 
 Texture_Id :: enum {
     Cobblestone = 0,
     Colormap = 1,
     Prototype = 2,
+}
+
+Scenes :: enum {
+    None,
+    Main,
 }
 
 sdl_assert :: proc(ok: bool) {
