@@ -1,0 +1,8 @@
+// raddbg 0.9.29 project file
+
+target:
+{
+  executable: "hello-sdl3.exe"
+  working_directory: ""
+  enabled: 1
+}
