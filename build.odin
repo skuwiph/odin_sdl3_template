@@ -31,7 +31,7 @@ main :: proc() {
 shadercross :: proc(file: os.File_Info, format: string) {
   basename := filepath.stem(file.name)
   outfile, ok := filepath.join({"content/shaders/out", strings.concatenate({basename, ".", format})})
-  log.debugf(`SHADERX: {}`, outfile)
+//   log.debugf(`SHADERX: {}`, outfile)
   run({"shadercross", file.fullpath, "-o", outfile, "-I", "content/shaders/include"})
 }
 
@@ -40,14 +40,14 @@ run_str :: proc(cmd: string) {
 }
 
 run :: proc(cmd: []string) {
-  log.infof("Running {}", cmd)
+//   log.infof("Running {}", cmd)
   code, err := exec(cmd)
   if err != nil {
-    log.errorf("Error executing process: {}", err)
+    log.errorf("Error executing process: {}: {}", cmd, err)
     os.exit(1)
   }
   if code != 0 {
-    log.errorf("Process exited with non-zero code {}", code)
+    log.errorf("Process exited with non-zero code {}: {}", cmd,code)
     os.exit(1)
   }
 }
